@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 绘图</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="halftone"></div>
+<div id="speedlines"></div>
+<div id="bursts"></div>
+
+<div id="app">
+  <header id="header">
+    <div class="logo-panel">
+      <h1 class="logo-title">AI 绘图!</h1>
+      <div class="logo-sub">CREATE YOUR COMIC</div>
+    </div>
+    <button id="settings-btn" class="comic-btn" type="button">设置</button>
+  </header>
+
+  <main id="main">
+    <section id="config" class="comic-panel">
+      <div class="panel-label"><span class="label-bubble">主题</span></div>
+      <div id="theme-select" class="comic-dropdown"></div>
+
+      <div class="panel-label"><span class="label-bubble">风格</span></div>
+      <div id="style-select" class="comic-dropdown"></div>
+
+      <div class="panel-label"><span class="label-bubble">预设包</span></div>
+      <div id="preset-select" class="comic-dropdown"></div>
+
+      <div class="panel-label label-row">
+        <span class="label-bubble">提示词</span>
+        <button id="enhance-btn" class="mini-action" type="button">增强</button>
+      </div>
+      <textarea id="prompt" rows="3" placeholder="输入你想生成的画面描述..."></textarea>
+
+      <div class="panel-label label-row">
+        <span class="label-bubble">反提示词</span>
+        <button id="negative-clear-btn" class="mini-action" type="button">清空</button>
+      </div>
+      <textarea id="negative" rows="2" placeholder="输入不希望出现在画面中的内容..."></textarea>
+      <div id="negative-presets" class="mini-chip-grid"></div>
+
+      <div class="panel-label"><span class="label-bubble">尺寸</span></div>
+      <div id="size-grid" class="chip-grid">
+        <button class="chip active" data-size="1024x1024">1:1</button>
+        <button class="chip" data-size="1024x1792">9:16</button>
+        <button class="chip" data-size="1792x1024">16:9</button>
+      </div>
+
+      <div class="panel-label"><span class="label-bubble">参考图</span></div>
+      <div id="reference-box">
+        <input id="reference-input" type="file" accept="image/*" hidden>
+        <button id="reference-upload-btn" class="comic-btn" type="button">上传参考图</button>
+        <button id="reference-clear-btn" class="mini-action" type="button" style="display:none">移除</button>
+        <img id="reference-preview" alt="参考图" style="display:none">
+      </div>
+
+      <div class="panel-label"><span class="label-bubble">图生图</span></div>
+      <div id="image-mode-grid" class="chip-grid">
+        <button class="chip active" data-mode="style">换风格</button>
+        <button class="chip" data-mode="redraw">重绘</button>
+        <button class="chip" data-mode="product">产品化</button>
+        <button class="chip" data-mode="poster">变海报</button>
+      </div>
+
+      <button id="generate-btn" class="action-btn" type="button">
+        <span class="action-text">生成图片</span>
+      </button>
+      <div id="error-msg"></div>
+    </section>
+
+    <section id="preview" class="comic-panel panel-big">
+      <div id="preview-inner">
+        <div id="preview-placeholder">
+          <div class="placeholder-art"><div class="ph-star"></div></div>
+          <p class="ph-text">等待你的创作</p>
+        </div>
+        <img id="preview-img" style="display:none" alt="生成结果">
+        <div id="loading" style="display:none">
+          <div class="spinner-comic">...</div>
+          <span>生成中...</span>
+        </div>
+      </div>
+      <button id="download-btn" class="comic-btn" type="button" style="display:none">下载</button>
+    </section>
+  </main>
+
+  <section id="history-section" class="comic-panel history-panel" style="display:none">
+    <div class="panel-label label-row">
+      <span class="label-bubble">历史</span>
+      <button id="history-clear-btn" class="mini-action" type="button">清空</button>
+    </div>
+    <div id="history-grid"></div>
+  </section>
+
+  <footer id="footer"></footer>
+
+  <div id="sfx-pow">POW!</div>
+  <div id="sfx-bam">BAM!</div>
+  <div id="sfx-zap">ZAP!</div>
+</div>
+
+<div id="settings-overlay">
+  <div id="settings-modal" class="comic-panel">
+    <div class="s-header speech-bubble">API 设置</div>
+    <div class="api-section">
+      <div class="s-subtitle">生图 API</div>
+      <div class="field-label">生图厂商</div>
+      <select id="s-provider"></select>
+      <input id="s-key" class="s-input" type="password" placeholder="生图 API Key">
+      <input id="s-url" class="s-input" placeholder="生图 API 地址">
+      <div class="field-label">可选生图模型</div>
+      <div id="s-model-chips" class="chip-grid"></div>
+      <input id="s-model-custom" class="s-input" placeholder="生图模型名称">
+    </div>
+    <div class="api-section">
+      <div class="s-subtitle">提示词优化 API</div>
+      <input id="s-enhance-key" class="s-input" type="password" placeholder="提示词优化 API Key">
+      <input id="s-enhance-url" class="s-input" placeholder="提示词优化 API 地址，例如 https://api.openai.com/v1/chat/completions">
+      <input id="s-enhance-model" class="s-input" placeholder="提示词优化模型名称，例如 gpt-4o-mini">
+    </div>
+    <button id="settings-save-btn" class="comic-btn" type="button">保存</button>
+  </div>
+</div>
+
+<div id="history-preview-overlay">
+  <div id="history-preview-modal" class="comic-panel">
+    <button id="history-preview-close" class="comic-btn" type="button">关闭</button>
+    <div class="history-preview-tools">
+      <button id="history-zoom-out" class="mini-action" type="button">缩小</button>
+      <span id="history-zoom-value">100%</span>
+      <button id="history-zoom-in" class="mini-action" type="button">放大</button>
+      <button id="history-zoom-reset" class="mini-action" type="button">重置</button>
+    </div>
+    <div id="history-preview-stage">
+      <img id="history-preview-img" alt="历史大图">
+    </div>
+    <div class="history-preview-meta">
+      <div id="history-preview-prompt"></div>
+      <div class="history-preview-actions">
+        <button id="history-preview-use" class="comic-btn" type="button">使用</button>
+        <button id="history-preview-download" class="comic-btn" type="button">下载</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js?v=14"></script>
+<script src="ui.js?v=14"></script>
+<script src="api.js?v=14"></script>
+<script src="history.js?v=14"></script>
+<script src="settings.js?v=14"></script>
+<script src="app.js?v=14"></script>
+</body>
+</html>
